@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const { validationResult } = require('express-validator');
 const userModel = require('../models/userModel');
 const jwt = require('jsonwebtoken');
-require("dotenv").config;
+require("dotenv").config();
 
 const generateToken = (id, role) => {
     return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '30d' });
@@ -84,5 +84,37 @@ exports.login = async (req, res) => {
         res.status(500).json({
              message: 'Server error.' 
             });
+    }
+};
+
+exports.updatePassword = async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Both current and new passwords are required." });
+    }
+
+    try {
+        const userId = req.user.user_id || req.user.id;
+        const user = await userModel.findUserById(userId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Current password is incorrect.' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const newPasswordHash = await bcrypt.hash(newPassword, salt);
+
+        await userModel.updateUserPassword(userId, newPasswordHash);
+
+        res.status(200).json({ message: 'Password updated successfully.' });
+    } catch (error) {
+        console.error('Password update error:', error);
+        res.status(500).json({ message: 'Server error.' });
     }
 };
