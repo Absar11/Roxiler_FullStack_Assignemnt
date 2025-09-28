@@ -21,4 +21,15 @@ const validate = (req, res, next) => {
     next();
 };
 
-module.exports = { userValidation, passwordValidator, validate };
+const storeValidation = [
+    body('name').notEmpty().withMessage('Store name is required.'),
+    body('email').isEmail().withMessage('Store email must be valid.'),
+    body('address').isLength({ max: 400 }).withMessage('Store address must be at most 400 characters.'),
+    body('owner_id').isInt().withMessage('Owner ID must be an integer.')
+];
+
+const ratingValidation = [
+    body('rating_value').isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5.')
+];
+
+module.exports = { userValidation, passwordValidator, validate, storeValidation, ratingValidation };
